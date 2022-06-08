@@ -1,4 +1,4 @@
-# NGCP (PyTorch Version)
+# NGCF (PyTorch Version)
 Reproduction of Neural Graph Collaborative Filtering (NGCF)
 
 # Reference
