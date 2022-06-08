@@ -159,8 +159,3 @@ class NGCF(nn.Module):
 
         return loss_value + l2_value
 
-if __name__ == '__main__':
-    a = [0, 2, 3]
-    a = torch.LongTensor(a)
-    print(a.shape)
-    print(a.unsqueeze(0).shape)
