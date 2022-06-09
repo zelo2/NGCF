@@ -56,60 +56,61 @@ if __name__ == '__main__':
         print("epoch:%d BPR loss:%d" % (epoch, loss))
 
         '''Test/Validation'''
-        with torch.no_grad():
-            print("Test")
-            test_recall = 0
-            k = 20  # Recall@20, NDCG@20
-            ndcg_k_collection = []
-            test_batch_size = batch_size * 2
-            num_batch = data.n_test // batch_size + 1
+        if epoch > 100:
+            with torch.no_grad():
+                print("Test")
+                test_recall = 0
+                k = 20  # Recall@20, NDCG@20
+                ndcg_k_collection = []
+                test_batch_size = batch_size * 2
+                num_batch = data.n_test // batch_size + 1
 
-            for test_user in data.test_set.keys():
-                print(test_user)
-                test_item_sequence = data.test_set[test_user]
-                train_item_sequence = data.train_set[test_user]
-                item_set = range(data.n_item)
+                for test_user in data.test_set.keys():
+                    print(test_user)
+                    test_item_sequence = data.test_set[test_user]
+                    train_item_sequence = data.train_set[test_user]
+                    item_set = range(data.n_item)
 
-                test_user_embeddings, all_item_embeddings, _ = net(test_user, item_set, [], drop_flag=False)
+                    test_user_embeddings, all_item_embeddings, _ = net(test_user, item_set, [], drop_flag=False)
 
-                # all_item_embeddings = net.embeding_dict['item_embed']
-                all_item_embeddings[train_item_sequence, :] = 0  # delete training data
-                ratings = torch.matmul(test_user_embeddings, all_item_embeddings.T).squeeze().cpu()  # [item_num]
-                ratings = np.array(ratings)
-                rating_index = np.argsort(ratings)
-                rating_index_max20 = rating_index[-20:]
-                ratings_max20 = ratings[rating_index_max20]  # top-k ratings
-
-
-                '''NDCG@k'''
-                dcg_k = np.sum(ratings_max20 / np.log2(np.arange(2, len(rating_index_max20) + 2)))
-                if len(test_item_sequence) < k:
-                    ideal_rating = [1.] * len(test_item_sequence) + [0.] * (k - len(test_item_sequence))
-                else:
-                    ideal_rating = [1.] * k
-                dcg_k_max = np.sum(ideal_rating / np.log2(np.arange(2, k + 2)))
-                ndcg_k = dcg_k / dcg_k_max
-                ndcg_k_collection.append(ndcg_k)
+                    # all_item_embeddings = net.embeding_dict['item_embed']
+                    all_item_embeddings[train_item_sequence, :] = 0  # delete training data
+                    ratings = torch.matmul(test_user_embeddings, all_item_embeddings.T).cpu()  # [item_num]
+                    ratings = np.array(ratings)
+                    rating_index = np.argsort(ratings)
+                    rating_index_max20 = rating_index[-20:]
+                    ratings_max20 = ratings[rating_index_max20]  # top-k ratings
 
 
-                for rec_item_id in rating_index_max20:
-                    if rec_item_id in test_item_sequence:
-                        test_recall += 1
+                    '''NDCG@k'''
+                    dcg_k = np.sum(ratings_max20 / np.log2(np.arange(2, len(rating_index_max20) + 2)))
+                    if len(test_item_sequence) < k:
+                        ideal_rating = [1.] * len(test_item_sequence) + [0.] * (k - len(test_item_sequence))
+                    else:
+                        ideal_rating = [1.] * k
+                    dcg_k_max = np.sum(ideal_rating / np.log2(np.arange(2, k + 2)))
+                    ndcg_k = dcg_k / dcg_k_max
+                    ndcg_k_collection.append(ndcg_k)
 
-            '''
-            How to compute these evalution metrics?
-            http://www.javashuo.com/article/p-npsntsvi-mw.html
-            https://zhuanlan.zhihu.com/p/136199536
-            '''
 
-            '''Recall@20'''
-            recall_20 = test_recall / data.n_test
-            recall_loger.append(recall_20)
+                    for rec_item_id in rating_index_max20:
+                        if rec_item_id in test_item_sequence:
+                            test_recall += 1
 
-            '''NDCG@20'''
-            ndcg_20_final = np.mean(np.array(ndcg_k_collection))
+                '''
+                How to compute these evalution metrics?
+                http://www.javashuo.com/article/p-npsntsvi-mw.html
+                https://zhuanlan.zhihu.com/p/136199536
+                '''
 
-            print("Recall@20:", recall_20)
-            print("NDCG@20:", ndcg_20_final)
+                '''Recall@20'''
+                recall_20 = test_recall / data.n_test
+                recall_loger.append(recall_20)
+
+                '''NDCG@20'''
+                ndcg_20_final = np.mean(np.array(ndcg_k_collection))
+
+                print("Recall@20:", recall_20)
+                print("NDCG@20:", ndcg_20_final)
 
 
