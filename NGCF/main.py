@@ -56,7 +56,7 @@ if __name__ == '__main__':
         print("epoch:%d BPR loss:%d" % (epoch, loss))
 
         '''Test/Validation'''
-        if epoch > 100:
+        if epoch > 0:
             with torch.no_grad():
                 print("Test")
                 test_recall = 0
@@ -66,7 +66,6 @@ if __name__ == '__main__':
                 num_batch = data.n_test // batch_size + 1
 
                 for test_user in data.test_set.keys():
-                    print(test_user)
                     test_item_sequence = data.test_set[test_user]
                     train_item_sequence = data.train_set[test_user]
                     item_set = range(data.n_item)

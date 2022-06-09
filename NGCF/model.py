@@ -153,6 +153,7 @@ class NGCF(nn.Module):
 
         # L2范式：所有元素的平方和 开根号
         l2_value = torch.norm(users, p=2) ** 2 + torch.norm(pos_items, p=2) ** 2 + torch.norm(neg_items, p=2) ** 2
+        l2_value /= 2
 
         # for k in range(self.layer_num):
         #     l2_value += torch.norm(self.weight_dict['W1_layer%d' % k], p=2) ** 2
