@@ -26,7 +26,7 @@ if __name__ == '__main__':
     print("Interactions:", data.n_train + data.n_test)
     print("Density:", (data.n_train + data.n_test) / (data.n_user * data.n_item))
 
-    net = model.NGCF(data.n_user, data.n_item, norm_adj_plus_I, norm_adj, parser_ngcf)
+    net = model.NGCF(data.n_user, data.n_item, norm_adj_plus_I, norm_adj, device, parser_ngcf)
     net = net.to(device)
 
     '''Train'''

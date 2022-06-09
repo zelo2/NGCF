@@ -12,8 +12,9 @@ from snack import parameter_setting
 
 
 class NGCF(nn.Module):
-    def __init__(self, n_user, n_item, norm_adj_plus_I, norm_adj, args):
+    def __init__(self, n_user, n_item, norm_adj_plus_I, norm_adj, device, args):
         super(NGCF, self).__init__()
+        self.device = device
         self.n_user = n_user
         self.n_item = n_item
         self.norm_adj = norm_adj
@@ -91,6 +92,9 @@ class NGCF(nn.Module):
         for k in range(self.layer_num):
             # Graph Convolution operation including self connection
             # [M+N, M+N] * [M+N, embed_size] = [M+N, embed_size]
+
+            A_hat = A_hat.to(self.device)
+            embedding_matrix = embedding_matrix.to(self.device)
 
             neighbor_information_with_self_connection = torch.sparse.mm(A_hat, embedding_matrix)
 
