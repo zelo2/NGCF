@@ -43,7 +43,7 @@ if __name__ == '__main__':
             pos_items = torch.LongTensor(pos_items).to(device)
             neg_items = torch.LongTensor(neg_items).to(device)
 
-            user_embeddings, pos_item_embeddings, neg_item_embeddings = net(users, pos_items, neg_items)
+            user_embeddings, pos_item_embeddings, neg_item_embeddings = net(users, pos_items, neg_items, drop_flag=True)
             batch_loss = net.bpr_loss(user_embeddings, pos_item_embeddings, neg_item_embeddings)
 
             optimizer.zero_grad()
@@ -58,14 +58,20 @@ if __name__ == '__main__':
         '''Test/Validation'''
         with torch.no_grad():
             print("Test")
-            all_item_embeddings = net.embeding_dict['item_embed']
             test_recall = 0
             k = 20  # Recall@20, NDCG@20
             ndcg_k_collection = []
+            test_batch_size = batch_size * 2
+            num_batch = data.n_test // batch_size + 1
+
             for test_user in data.test_set.keys():
                 test_item_sequence = data.test_set[test_user]
-                test_user_embeddings = net.embeding_dict['user_embed'][test_user].unsqueeze(0)
+                train_item_sequence = data.train_set[test_user]
 
+                test_user_embeddings, _, _ = net(test_user, test_item_sequence, [], drop_flag=False)
+
+                all_item_embeddings = net.embeding_dict['item_embed']
+                all_item_embeddings[train_item_sequence, :] = 0  # delete training data
                 ratings = torch.matmul(test_user_embeddings, all_item_embeddings.T).squeeze().cpu()  # [item_num]
                 ratings = np.array(ratings)
                 rating_index = np.argsort(ratings)

@@ -115,9 +115,9 @@ class NGCF(nn.Module):
             # activation
             embedding_matrix = nn.LeakyReLU(negative_slope=0.2)(neighbor_information_with_self_connection
                                                                 + neighbor_information)
-
             # Message dropout
-            embedding_matrix = nn.Dropout(0.1)(embedding_matrix)
+            if drop_flag:
+                embedding_matrix = nn.Dropout(0.1)(embedding_matrix)
 
             # Normalization
             norm_embeddings = F.normalize(embedding_matrix, p=2, dim=1)  # normalize each row
