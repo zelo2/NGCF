@@ -65,12 +65,14 @@ if __name__ == '__main__':
             num_batch = data.n_test // batch_size + 1
 
             for test_user in data.test_set.keys():
+                print(test_user)
                 test_item_sequence = data.test_set[test_user]
                 train_item_sequence = data.train_set[test_user]
+                item_set = range(data.n_item)
 
-                test_user_embeddings, _, _ = net(test_user, test_item_sequence, [], drop_flag=False)
+                test_user_embeddings, all_item_embeddings, _ = net(test_user, item_set, [], drop_flag=False)
 
-                all_item_embeddings = net.embeding_dict['item_embed']
+                # all_item_embeddings = net.embeding_dict['item_embed']
                 all_item_embeddings[train_item_sequence, :] = 0  # delete training data
                 ratings = torch.matmul(test_user_embeddings, all_item_embeddings.T).squeeze().cpu()  # [item_num]
                 ratings = np.array(ratings)
