@@ -121,15 +121,15 @@ class Data(object):
             return result.tocoo()
 
 
-        mean_adj_matrix = mean_adj_single(adj_matrix)
+        norm_adj_matrix = norm_adj_single(adj_matrix)
         '''
         为什么不是norm_adj_matrix = norm_adj_single(adj_matrix) + sp.eye(adj_matrix.shape[0])？
         
         解：因为A矩阵的左下角是一个R.T（[N, M]）,仅用D-1即可对行和列进行Normalization！
         '''
-        norm_adj_matrix = mean_adj_single(adj_matrix) + sp.eye(adj_matrix.shape[0])
+        norm_adj_matrix_plus_I = norm_adj_single(adj_matrix) + sp.eye(adj_matrix.shape[0])
 
-        return mean_adj_matrix.tocsr(), norm_adj_matrix.tocsr()
+        return norm_adj_matrix.tocsr(), norm_adj_matrix_plus_I.tocsr()
 
     def negative_pool(self):
         for u in self.train_set.keys():

@@ -20,7 +20,7 @@ if __name__ == '__main__':
     path = path[1]
     batch_size = parser_ngcf.batch_size
     data = data_load.Data(path, batch_size)
-    norm_adj_plus_I, norm_adj = data.creat_adj_mat()
+    norm_adj, norm_adj_plus_I = data.creat_adj_mat()
     print("User Number:", data.n_user)
     print("Item Number:", data.n_item)
     print("Interactions:", data.n_train + data.n_test)
