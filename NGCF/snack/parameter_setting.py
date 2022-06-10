@@ -22,7 +22,7 @@ def NGCF_parse():
                         help='embedding size')
     parser.add_argument('--batch_size', type=int, default=1024,
                         help='batch size')
-    parser.add_argument('--layer_num', type=int, default=2,
+    parser.add_argument('--layer_num', type=int, default=3,
                         help='number of GCN layer')
     parser.add_argument('--dropout_node', type=float, default=0.1,
                         help='probability of node dropout')
