@@ -86,16 +86,15 @@ class NGCF(nn.Module):
         A = self.sp_norm_adj
         embedding_matrix = torch.cat([self.embeding_dict['user_embed'], self.embeding_dict['item_embed']]
                                      , 0)  # [M+N, embedding_size]
+        A_hat = A_hat.to(self.device)
+        A = A.to(self.device)
+        embedding_matrix = embedding_matrix.to(self.device)
 
         all_embeddings = [embedding_matrix]
 
         for k in range(self.layer_num):
             # Graph Convolution operation including self connection
             # [M+N, M+N] * [M+N, embed_size] = [M+N, embed_size]
-
-            A_hat = A_hat.to(self.device)
-            A = A.to(self.device)
-            embedding_matrix = embedding_matrix.to(self.device)
 
             neighbor_information_with_self_connection = torch.sparse.mm(A_hat, embedding_matrix)
 
