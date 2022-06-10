@@ -56,7 +56,7 @@ if __name__ == '__main__':
         print("epoch:%d BPR loss:%d" % (epoch, loss))
 
         '''Test/Validation'''
-        if epoch % 20 == 0:
+        if epoch > 19 and (epoch + 1) % 20 == 0:
             with torch.no_grad():
                 print("Test")
                 test_recall = 0
