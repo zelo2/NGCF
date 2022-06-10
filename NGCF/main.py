@@ -13,6 +13,7 @@ import sklearn.metrics as metrics
 
 if __name__ == '__main__':
     device = torch.device(('cuda:0') if torch.cuda.is_available() else 'cpu')
+    print("Device:", device)
 
     parser_ngcf = parameter_setting.NGCF_parse()
 
@@ -28,6 +29,7 @@ if __name__ == '__main__':
 
     net = model.NGCF(data.n_user, data.n_item, norm_adj_plus_I, norm_adj, device, parser_ngcf)
     net = net.to(device)
+    print(net.device)
 
     '''Train'''
     optimizer = torch.optim.Adam(net.parameters(), lr=parser_ngcf.lr)
@@ -35,8 +37,9 @@ if __name__ == '__main__':
 
     for epoch in range(parser_ngcf.epoch):  # parser_ngcf.epoch
         print("Train")
-        loss = 0
-        n_batch = data.n_user // batch_size + 1
+        loss = 0.
+        n_batch = data.n_train // batch_size + 1
+        print("n_batch", n_batch)
         for batch_iteration in range(n_batch):
             users, pos_items, neg_items = data.sample()  # [batch_size] * 3
             users = torch.LongTensor(users).to(device)
@@ -46,22 +49,28 @@ if __name__ == '__main__':
             user_embeddings, pos_item_embeddings, neg_item_embeddings = net(users, pos_items, neg_items, drop_flag=True)
             batch_loss = net.bpr_loss(user_embeddings, pos_item_embeddings, neg_item_embeddings)
 
+
+
             optimizer.zero_grad()
             batch_loss.backward()
             optimizer.step()
 
             loss += batch_loss
 
+
+
         loss_loger.append(loss)
-        print("epoch:%d BPR loss:%d" % (epoch, loss))
+        print("epoch:%d BPR loss:%f" % (epoch, loss))
 
         '''Test/Validation'''
-        if epoch > 19 and epoch + 1 == 20 * ((epoch + 1) // 20):
+        # if epoch > 19 and (epoch + 1) == 20 * ((epoch + 1) // 20):
+        if epoch > 5:
             with torch.no_grad():
                 print("Test")
                 test_recall = 0
                 k = 20  # Recall@20, NDCG@20
                 ndcg_k_collection = []
+                recall_k_collection = []
                 test_batch_size = batch_size * 2
                 num_batch = data.n_test // batch_size + 1
 
@@ -75,6 +84,7 @@ if __name__ == '__main__':
                     # all_item_embeddings = net.embeding_dict['item_embed']
                     all_item_embeddings[train_item_sequence, :] = 0  # delete training data
                     ratings = torch.matmul(test_user_embeddings, all_item_embeddings.T).cpu()  # [item_num]
+                    print(ratings)
                     ratings = np.array(ratings)
                     rating_index = np.argsort(ratings)
                     rating_index_max20 = rating_index[-20:]
@@ -93,11 +103,12 @@ if __name__ == '__main__':
                     ndcg_k = dcg_k / dcg_k_max
                     ndcg_k_collection.append(ndcg_k)
 
-
+                    '''Recall@20'''
                     for rec_item_id in rating_index_max20:
                         if rec_item_id in test_item_sequence:
                             test_recall += 1
-
+                    recall_20 = test_recall / len(test_item_sequence)
+                    recall_k_collection.append(recall_20)
                 '''
                 How to compute these evalution metrics?
                 http://www.javashuo.com/article/p-npsntsvi-mw.html
@@ -105,7 +116,7 @@ if __name__ == '__main__':
                 '''
 
                 '''Recall@20'''
-                recall_20 = test_recall / data.n_test
+                recall_20_final = np.mean(np.array(recall_k_collection))
                 recall_loger.append(recall_20)
 
                 '''NDCG@20'''
