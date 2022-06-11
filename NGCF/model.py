@@ -26,8 +26,8 @@ class NGCF(nn.Module):
         self.reg_value = eval(args.reg)[0]
 
         self.embeding_dict, self.weight_dict = self.init_weight()
-        self.sp_norm_adj_plus_I = self.convert_coo_matirix_2_sp_tensor(self.norm_adj_plus_I)
-        self.sp_norm_adj = self.convert_coo_matirix_2_sp_tensor(self.norm_adj)
+        self.sp_norm_adj_plus_I = self.convert_coo_matirix_2_sp_tensor(self.norm_adj_plus_I).to(self.device)
+        self.sp_norm_adj = self.convert_coo_matirix_2_sp_tensor(self.norm_adj).to(self.device)
 
     def init_weight(self):
         '''Embedding with xavier initialization'''
@@ -86,8 +86,8 @@ class NGCF(nn.Module):
         A = self.sp_norm_adj
         embedding_matrix = torch.cat([self.embeding_dict['user_embed'], self.embeding_dict['item_embed']]
                                      , 0)  # [M+N, embedding_size]
-        A_hat = A_hat.to(self.device)
-        A = A.to(self.device)
+        # A_hat = A_hat.to(self.device)
+        # A = A.to(self.device)
         embedding_matrix = embedding_matrix.to(self.device)
 
         all_embeddings = [embedding_matrix]
