@@ -67,7 +67,7 @@ if __name__ == '__main__':
         if epoch > 5:
             with torch.no_grad():
                 print("Test")
-                test_recall = 0
+
                 k = 20  # Recall@20, NDCG@20
                 ndcg_k_collection = []
                 recall_k_collection = []
@@ -75,6 +75,7 @@ if __name__ == '__main__':
                 num_batch = data.n_test // batch_size + 1
 
                 for test_user in data.test_set.keys():
+                    test_recall = 0
                     test_item_sequence = data.test_set[test_user]
                     train_item_sequence = data.train_set[test_user]
                     item_set = range(data.n_item)
@@ -84,7 +85,7 @@ if __name__ == '__main__':
                     # all_item_embeddings = net.embeding_dict['item_embed']
                     all_item_embeddings[train_item_sequence, :] = 0  # delete training data
                     ratings = torch.matmul(test_user_embeddings, all_item_embeddings.T).cpu()  # [item_num]
-                    print(ratings)
+                    # print(ratings)
                     ratings = np.array(ratings)
                     rating_index = np.argsort(ratings)
                     rating_index_max20 = rating_index[-20:]
@@ -93,6 +94,7 @@ if __name__ == '__main__':
 
                     '''NDCG@k'''
                     ndcg_k_rating = torch.matmul(test_user_embeddings, all_item_embeddings[test_item_sequence].T).cpu()
+                    # ndcg_k_rating = torch.nn.functional.normalize(ndcg_k_rating, p=2)
                     ndcg_k_rating = np.array(ndcg_k_rating)
                     dcg_k = np.sum(ndcg_k_rating / np.log2(np.arange(2, len(ndcg_k_rating) + 2)))
                     if len(test_item_sequence) < k:
