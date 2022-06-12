@@ -63,8 +63,8 @@ if __name__ == '__main__':
         print("epoch:%d BPR loss:%f" % (epoch, loss))
 
         '''Test/Validation'''
-        # if epoch > 19 and (epoch + 1) == 20 * ((epoch + 1) // 20):
-        if epoch > 5:
+        if epoch > 19 and (epoch + 1) == 20 * ((epoch + 1) // 20):
+        # if epoch > 5:
             with torch.no_grad():
                 print("Test")
 
@@ -129,3 +129,5 @@ if __name__ == '__main__':
                 print("NDCG@20:", ndcg_20_final)
 
 
+    print("Recall@20:", recall_loger)
+    print("NDCG@20:", ndcg_loger)
