@@ -119,12 +119,12 @@ if __name__ == '__main__':
 
                 '''Recall@20'''
                 recall_20_final = np.mean(np.array(recall_k_collection))
-                recall_loger.append(recall_20)
+                recall_loger.append(recall_20_final)
 
                 '''NDCG@20'''
                 ndcg_20_final = np.mean(np.array(ndcg_k_collection))
 
-                print("Recall@20:", recall_20)
+                print("Recall@20:", recall_20_final)
                 print("NDCG@20:", ndcg_20_final)
 
 
