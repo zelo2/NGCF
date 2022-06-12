@@ -75,7 +75,7 @@ if __name__ == '__main__':
                 num_batch = data.n_test // batch_size + 1
 
                 for test_user in data.test_set.keys():
-                    test_recall = 0
+                    test_ratings = []
                     test_item_sequence = data.test_set[test_user]
                     train_item_sequence = data.train_set[test_user]
                     item_set = range(data.n_item)
@@ -91,12 +91,15 @@ if __name__ == '__main__':
                     rating_index_max20 = rating_index[-20:]
                     ratings_max20 = ratings[rating_index_max20]  # top-k ratings
 
+                    '''Rating computation '''
+                    for top_k_item in rating_index_max20:
+                        if top_k_item in test_item_sequence:
+                            test_ratings.append(1.0)
+                        else:
+                            test_ratings.append(0)
 
                     '''NDCG@k'''
-                    ndcg_k_rating = torch.matmul(test_user_embeddings, all_item_embeddings[test_item_sequence].T).cpu()
-                    # ndcg_k_rating = torch.nn.functional.normalize(ndcg_k_rating, p=2)
-                    ndcg_k_rating = np.array(ndcg_k_rating)
-                    dcg_k = np.sum(ndcg_k_rating / np.log2(np.arange(2, len(ndcg_k_rating) + 2)))
+                    dcg_k = np.sum(test_ratings / np.log2(np.arange(2, k + 2)))
                     if len(test_item_sequence) < k:
                         ideal_rating = [1.] * len(test_item_sequence) + [0.] * (k - len(test_item_sequence))
                     else:
@@ -106,10 +109,7 @@ if __name__ == '__main__':
                     ndcg_k_collection.append(ndcg_k)
 
                     '''Recall@20'''
-                    for rec_item_id in rating_index_max20:
-                        if rec_item_id in test_item_sequence:
-                            test_recall += 1
-                    recall_20 = test_recall / len(test_item_sequence)
+                    recall_20 = np.sum(np.asfarray(test_ratings)) / len(test_item_sequence)
                     recall_k_collection.append(recall_20)
                 '''
                 How to compute these evalution metrics?
@@ -123,6 +123,7 @@ if __name__ == '__main__':
 
                 '''NDCG@20'''
                 ndcg_20_final = np.mean(np.array(ndcg_k_collection))
+                ndcg_loger.append(ndcg_20_final)
 
                 print("Recall@20:", recall_20_final)
                 print("NDCG@20:", ndcg_20_final)
