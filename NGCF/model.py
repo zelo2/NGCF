@@ -82,8 +82,8 @@ class NGCF(nn.Module):
         # return out
 
     def forward(self, user, pos_item, neg_item, drop_flag=False):
-        A_hat = self.sp_norm_adj_plus_I
-        A = self.sp_norm_adj
+        A_hat = self.sp_norm_adj_plus_I.to(self.device)
+        A = self.sp_norm_adj.to(self.device)
         embedding_matrix = torch.cat([self.embeding_dict['user_embed'], self.embeding_dict['item_embed']]
                                      , 0)  # [M+N, embedding_size]
         # A_hat = A_hat.to(self.device)
