@@ -26,7 +26,6 @@ class LightGCN(nn.Module):
         self.reg_value = eval(args.reg)[0]
 
         self.embeding_dict = self.init_weight()
-        self.sp_norm_adj_plus_I = self.convert_coo_matirix_2_sp_tensor(self.norm_adj_plus_I).to(self.device)
         self.sp_norm_adj = self.convert_coo_matirix_2_sp_tensor(self.norm_adj).to(self.device)
 
     def init_weight(self):
