@@ -42,9 +42,9 @@ if __name__ == '__main__':
         print("n_batch", n_batch)
         for batch_iteration in range(n_batch):
             users, pos_items, neg_items = data.sample()  # [batch_size] * 3
-            users = torch.LongTensor(users).to(device)
-            pos_items = torch.LongTensor(pos_items).to(device)
-            neg_items = torch.LongTensor(neg_items).to(device)
+            # users = torch.LongTensor(users).to(device)
+            # pos_items = torch.LongTensor(pos_items).to(device)
+            # neg_items = torch.LongTensor(neg_items).to(device)
 
             user_embeddings, pos_item_embeddings, neg_item_embeddings = net(users, pos_items, neg_items, drop_flag=True)
             batch_loss = net.bpr_loss(user_embeddings, pos_item_embeddings, neg_item_embeddings)

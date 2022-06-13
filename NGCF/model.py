@@ -86,9 +86,9 @@ class NGCF(nn.Module):
         A = self.sp_norm_adj
         embedding_matrix = torch.cat([self.embeding_dict['user_embed'], self.embeding_dict['item_embed']]
                                      , 0)  # [M+N, embedding_size]
-        A_hat = A_hat.to(self.device)
-        A = A.to(self.device)
-        embedding_matrix = embedding_matrix.to(self.device)
+        # A_hat = A_hat.to(self.device)
+        # A = A.to(self.device)
+        # embedding_matrix = embedding_matrix.to(self.device)
 
         all_embeddings = [embedding_matrix]
 
