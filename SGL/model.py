@@ -19,11 +19,10 @@ class LightGCN_SSL(nn.Module):
         self.n_item = n_item
         self.norm_adj = norm_adj
 
-
         self.embed_size = args.embed_size
         self.batch_size = args.batch_size
         self.layer_num = args.layer_num
-        self.reg_value = eval(args.reg)[1]
+        self.reg_value = eval(args.reg)[0]
         self.ssl_reg = eval(args.ssl_reg)[1]
         self.ssl_temp = eval(args.ssl_temp)[1]
 
@@ -39,7 +38,6 @@ class LightGCN_SSL(nn.Module):
             'item_embed': nn.Parameter(initializer(torch.empty(self.n_item,
                                                                self.embed_size)))
         })
-
 
         return embedding_dict
 
@@ -71,22 +69,22 @@ class LightGCN_SSL(nn.Module):
     def forward(self, user, pos_item, neg_item, sub_graph1, sub_graph2, drop_flag=False):
 
         A = self.sp_norm_adj
+        sub_graph1 = self.convert_coo_matirix_2_sp_tensor(sub_graph1).to(self.device)
+        sub_graph2 = self.convert_coo_matirix_2_sp_tensor(sub_graph2).to(self.device)
         embedding_matrix = torch.cat([self.embeding_dict['user_embed'], self.embeding_dict['item_embed']]
                                      , 0)  # [M+N, embedding_size]
 
-
         all_embeddings = embedding_matrix
-        all_embeddings_1 = embedding_matrix
-        all_embeddings_2 = embedding_matrix
+        all_embeddings_1 = embedding_matrix.clone()
+        all_embeddings_2 = embedding_matrix.clone()
 
         for k in range(self.layer_num):
 
             # Graph Convolution operation without self connection
             embedding_matrix = torch.sparse.mm(A, embedding_matrix)
 
-            embedding_matrix_1 = torch.sparse.mm(sub_graph1, embedding_matrix)  # sub_1
-            embedding_matrix_2 = torch.sparse.mm(sub_graph2, embedding_matrix)
-
+            embedding_matrix_1 = torch.sparse.mm(sub_graph1, all_embeddings_1)  # sub_1
+            embedding_matrix_2 = torch.sparse.mm(sub_graph2, all_embeddings_2)
 
             # Message dropout
             if drop_flag:
@@ -128,7 +126,6 @@ class LightGCN_SSL(nn.Module):
         pos_item_embeddings_2 = item_embeddings_2[pos_item, :]
         neg_item_embeddings_2 = item_embeddings_2[neg_item, :]
         final_item_embeddings_2 = torch.cat([pos_item_embeddings_2, neg_item_embeddings_2], 0)
-
 
         og_results = [user_embeddings, pos_item_embeddings, neg_item_embeddings]
         sub1_results = [user_embeddings_1, final_item_embeddings_1]
@@ -173,30 +170,39 @@ class LightGCN_SSL(nn.Module):
         item_1 = sub1_results[1]
         item_2 = sub2_results[1]
 
-        user_cl_loss, item_cl_loss = 0., 0.
+        user_cl_loss, item_cl_loss = torch.tensor([0]).float().to(self.device), torch.tensor([0]).float().to(
+            self.device)
         all_users = torch.cat([user_1, user_2], 0)
         all_items = torch.cat([item_1, item_2], 0)
 
-        for i in range(sub1_results.shape[0]):
-            one_user_cl_loss = F.cosine_similarity(all_users[i], all_users, dim=1)  # cos similarity for each row
-            one_user_cl_loss[i] = 0
-            one_user_cl_loss = torch.exp(one_user_cl_loss / self.ssl_temp)
-            one_user_cl_loss = one_user_cl_loss[0] / torch.sum(one_user_cl_loss)
+        for i in range(all_users.shape[0]):
+            nega_user = torch.cat([all_users[:i, :], all_users[i + 1:, :]], 0)
+            nega_user_cl_loss = torch.exp(
+                F.cosine_similarity(all_users[i].unsqueeze(0), nega_user,
+                                    dim=1) / self.ssl_temp)  # cos similarity for each row
+            index_pos = i + user_1.shape[0] if i < user_1.shape[0] else i - user_1.shape[0]
+            # print(one_user_cl_loss.shape)  # should be 2048
+            pos_user_cos_sim = F.cosine_similarity(all_users[i].unsqueeze(0), all_users[index_pos].unsqueeze(0)) / self.ssl_temp
+            pos_user_cos_sim = torch.exp(pos_user_cos_sim)
+
+
+            one_user_cl_loss = pos_user_cos_sim / torch.sum(nega_user_cl_loss)
             one_user_cl_loss = torch.log2(one_user_cl_loss) * (-1)
-            user_cl_loss += one_user_cl_loss
+            user_cl_loss = user_cl_loss + one_user_cl_loss
 
-        for i in range(sub2_results.shape[0]):
-            one_item_cl_loss = torch.exp(F.cosine_similarity(all_items[i], all_items, dim=1) / self.ssl_temp)
-            one_user_cl_loss[i] = 0
-            one_item_cl_loss = one_item_cl_loss[0] / torch.sum(one_item_cl_loss)
+        for i in range(all_items.shape[0]):
+            nega_item = torch.cat([all_items[:i, :], all_items[i + 1:, :]], 0)
+            nega_item_cl_loss = torch.exp(
+                F.cosine_similarity(all_items[i].unsqueeze(0), nega_item, dim=1) / self.ssl_temp)
+
+            index_pos = i + user_1.shape[0] if i < user_1.shape[0] else i - user_1.shape[0]
+            pos_item_cos_sim = F.cosine_similarity(all_items[i].unsqueeze(0), all_items[index_pos].unsqueeze(0)) / self.ssl_temp
+            pos_item_cos_sim = torch.exp(pos_item_cos_sim)
+
+            one_item_cl_loss = pos_item_cos_sim / torch.sum(nega_item_cl_loss)
             one_item_cl_loss = torch.log2(one_item_cl_loss) * (-1)
-            item_cl_loss += one_item_cl_loss
+            item_cl_loss = item_cl_loss + one_item_cl_loss
 
-        cl_loss = (user_cl_loss + item_cl_loss) / self.batch_size
+        cl_loss = (user_cl_loss + item_cl_loss) / (self.batch_size * 2)
 
         return self.ssl_reg * cl_loss
-
-
-
-
-
