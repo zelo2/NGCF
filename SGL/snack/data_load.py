@@ -11,7 +11,7 @@ import scipy.sparse as sp
 from time import time
 
 class Data(object):
-    def __init__(self, path, batch_size, args):
+    def __init__(self, path, batch_size):
         self.path = path
         self.batch_size = batch_size
 
@@ -25,9 +25,6 @@ class Data(object):
 
         self.exist_users = []
 
-        # contrastive learning parameter
-        self.ssl_ratio = eval(args.ssl_ratio)[1]  # 1-amazon-book
-        self.aug_type = args.aug_type
 
         with open(train_file) as f:
             for l in f.readlines():
@@ -131,7 +128,7 @@ class Data(object):
 
         return norm_adj_matrix.tocsr(), norm_adj_matrix_plus_I.tocsr()
 
-    def creat_aug_adj_matrix_(self, aug_type):
+    def create_aug_adj_matrix(self, aug_type, ssl_rate):
         '''
         :param aug_type: 'ND'-Node Drop 'ED'-Edge Drop
         :return: augmentation sub-graphs
@@ -144,8 +141,8 @@ class Data(object):
 
 
         if aug_type == 'ND':  # node dropout
-            user_drop_num = int(self.n_user * self.ssl_ratio)
-            item_drop_num = int(self.n_item * self.ssl_ratio)
+            user_drop_num = int(self.n_user * ssl_rate)
+            item_drop_num = int(self.n_item * ssl_rate)
             drop_user_idx = random.sample(range(self.n_user), user_drop_num)
             drop_item_idx = random.sample(range(self.n_item), item_drop_num)
 
@@ -160,7 +157,7 @@ class Data(object):
             R = self.R.tolil()  # rating matrix
             R_hat = diag_user_drop.dot(R).dot(diag_item_drop)
         elif aug_type == 'ED':  # edge dropout
-            drop_edge_num = int(self.n_train * self.ssl_ratio)
+            drop_edge_num = int(self.n_train * ssl_rate)
             user_idx = self.R.tocoo().row
             item_idx = self.R.tocoo().col
             sample_drop_idx = random.sample(range(len(user_idx)), drop_edge_num)
@@ -178,6 +175,7 @@ class Data(object):
             row_sum = np.array(adj.sum(1))  # sum each row
             d_half = np.power(row_sum, -0.5).flatten()
             d_half[np.isinf(d_half)] = 0.
+            d_half[np.isnan(d_half)] = 0.
             d_half_matrix = sp.diags(d_half)
 
             result = d_half_matrix.dot(adj).dot(d_half_matrix)
