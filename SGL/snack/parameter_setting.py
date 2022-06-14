@@ -33,8 +33,8 @@ def SGL_parse():
                         help='temperature parameter')
     parser.add_argument('--ssl_reg', nargs='?', default='[0.1, 0.5, 0.02]',
                         help='regularization parameter for contrastive learning loss')
-    parser.add_argument('--aug_type', nargs='?', default='[ED, ND]',
-                        help='type of data augmentation (ED-Edge Drop, ND-Node Drop)')
+    parser.add_argument('--aug_type', nargs='?', default='[0, 1]',
+                        help='type of data augmentation (0-Node Drop, 1-Edge Drop)')
 
 
     return parser.parse_args()
