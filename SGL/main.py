@@ -10,18 +10,27 @@ from snack import parameter_setting
 import torch
 import numpy as np
 
-
 if __name__ == '__main__':
     device = torch.device(('cuda:0') if torch.cuda.is_available() else 'cpu')
     print("Device:", device)
+    aug_dic = {0: 'ND', 1: 'ED'}
 
     parser_sgl = parameter_setting.SGL_parse()
+    aug_type = aug_dic[eval(parser_sgl.aug_type)[1]]
+    ssl_rate = eval(parser_sgl.ssl_rate[1])
 
     path = ['../Data/amazon-book', '../Data/gowalla']
     path = path[1]
     batch_size = parser_sgl.batch_size
     data = data_load.Data(path, batch_size)
+
+    # Norm Adj Matrix
     norm_adj, norm_adj_plus_I = data.creat_adj_mat()
+    sub_graph1 = data.create_aug_adj_matrix(aug_type, ssl_rate)
+    sub_graph2 = data.create_aug_adj_matrix(aug_type, ssl_rate)
+
+
+    print('Augmentation Type:', aug_type)
     print("User Number:", data.n_user)
     print("Item Number:", data.n_item)
     print("Interactions:", data.n_train + data.n_test)
@@ -46,10 +55,14 @@ if __name__ == '__main__':
             pos_items = torch.LongTensor(pos_items).to(device)
             neg_items = torch.LongTensor(neg_items).to(device)
 
-            user_embeddings, pos_item_embeddings, neg_item_embeddings = net(users, pos_items, neg_items, drop_flag=True)
-            batch_loss = net.bpr_loss(user_embeddings, pos_item_embeddings, neg_item_embeddings)
+            og_results, sub1_results, sub2_results = net(users, pos_items, neg_items,
+                                                         sub_graph1, sub_graph2, drop_flag=False)
+            bpr_reg_loss = net.bpr_loss(og_results[0], og_results[1], og_results[2])
+
+            cl_loss = net.contrastive_loss(sub1_results, sub2_results)
 
 
+            batch_loss = bpr_reg_loss + cl_loss
 
             optimizer.zero_grad()
             batch_loss.backward()
@@ -57,14 +70,12 @@ if __name__ == '__main__':
 
             loss += batch_loss
 
-
-
         loss_loger.append(loss)
         print("epoch:%d BPR loss:%f" % (epoch, loss))
 
         '''Test/Validation'''
         if epoch > 4 and (epoch + 1) % 5 == 0:
-        # if epoch > 5:
+            # if epoch > 5:
             with torch.no_grad():
                 print("Test")
 
@@ -80,7 +91,9 @@ if __name__ == '__main__':
                     train_item_sequence = data.train_set[test_user]
                     item_set = range(data.n_item)
 
-                    test_user_embeddings, all_item_embeddings, _ = net(test_user, item_set, [], drop_flag=False)
+                    og_results, _, _ = net(users, item_set, [], sub_graph1, sub_graph2, drop_flag=False)
+                    test_user_embeddings = og_results[0]
+                    all_item_embeddings = og_results[1]
 
                     # all_item_embeddings = net.embeding_dict['item_embed']
                     all_item_embeddings[train_item_sequence, :] = 0  # delete training data
@@ -128,6 +141,6 @@ if __name__ == '__main__':
                 print("Recall@20:", recall_20_final)
                 print("NDCG@20:", ndcg_20_final)
 
-
     print("Recall@20:", recall_loger)
     print("NDCG@20:", ndcg_loger)
+    print("Loss loger:", loss_loger)
