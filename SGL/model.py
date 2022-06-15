@@ -74,9 +74,9 @@ class LightGCN_SSL(nn.Module):
         embedding_matrix = torch.cat([self.embeding_dict['user_embed'], self.embeding_dict['item_embed']]
                                      , 0)  # [M+N, embedding_size]
 
-        all_embeddings = embedding_matrix
-        all_embeddings_1 = embedding_matrix.clone()
-        all_embeddings_2 = embedding_matrix.clone()
+        all_embeddings = [embedding_matrix]
+        all_embeddings_1 = [embedding_matrix.clone()]
+        all_embeddings_2 = [embedding_matrix.clone()]
 
         for k in range(self.layer_num):
 
@@ -97,19 +97,22 @@ class LightGCN_SSL(nn.Module):
             norm_embeddings_1 = F.normalize(embedding_matrix_1, p=2, dim=1)  # normalize each row
             norm_embeddings_2 = F.normalize(embedding_matrix_2, p=2, dim=1)  # normalize each row
 
-            all_embeddings += embedding_matrix
-            all_embeddings_1 += embedding_matrix_1
-            all_embeddings_2 += embedding_matrix_2
+            all_embeddings += [embedding_matrix]
+            all_embeddings_1 += [embedding_matrix_1]
+            all_embeddings_2 += [embedding_matrix_2]
 
-        all_embeddings /= (self.layer_num + 1)
+        all_embeddings = torch.stack(all_embeddings, dim=1)
+        all_embeddings = torch.mean(all_embeddings, dim=1)
         user_embeddings = all_embeddings[:self.n_user, :]
         item_embeddings = all_embeddings[self.n_user:, :]
 
-        all_embeddings_1 /= (self.layer_num + 1)
+        all_embeddings_1 = torch.stack(all_embeddings_1, dim=1)
+        all_embeddings_1 = torch.mean(all_embeddings_1, dim=1)
         user_embeddings_1 = all_embeddings_1[:self.n_user, :]
         item_embeddings_1 = all_embeddings_1[self.n_user:, :]
 
-        all_embeddings_2 /= (self.layer_num + 1)
+        all_embeddings_2 = torch.stack(all_embeddings_2, dim=1)
+        all_embeddings_2 = torch.mean(all_embeddings_2, dim=1)
         user_embeddings_2 = all_embeddings_2[:self.n_user, :]
         item_embeddings_2 = all_embeddings_2[self.n_user:, :]
 

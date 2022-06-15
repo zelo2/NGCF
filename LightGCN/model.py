@@ -76,7 +76,7 @@ class LightGCN(nn.Module):
                                      , 0)  # [M+N, embedding_size]
         embedding_matrix = embedding_matrix.to(self.device)
 
-        all_embeddings = embedding_matrix
+        all_embeddings = [embedding_matrix]
 
         for k in range(self.layer_num):
 
@@ -84,16 +84,13 @@ class LightGCN(nn.Module):
             embedding_matrix = torch.sparse.mm(A, embedding_matrix)
 
 
-            # Message dropout
-            # if drop_flag:
-            #     embedding_matrix = nn.Dropout(0.1)(embedding_matrix)
-
             # Normalization
             # norm_embeddings = F.normalize(embedding_matrix, p=2, dim=1)  # normalize each row
 
-            all_embeddings += embedding_matrix
+            all_embeddings += [embedding_matrix]
 
-        all_embeddings /= (self.layer_num + 1)
+        all_embeddings = torch.stack(all_embeddings, dim=1)
+        all_embeddings = torch.mean(all_embeddings, dim=1)
         user_embeddings = all_embeddings[:self.n_user, :]
         item_embeddings = all_embeddings[self.n_user:, :]
 
