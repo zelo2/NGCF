@@ -75,22 +75,19 @@ class LightGCN_SSL(nn.Module):
                                      , 0)  # [M+N, embedding_size]
 
         all_embeddings = [embedding_matrix]
-        all_embeddings_1 = [embedding_matrix.clone()]
-        all_embeddings_2 = [embedding_matrix.clone()]
+        embedding_matrix_1 = embedding_matrix.clone()
+        embedding_matrix_2 = embedding_matrix.clone()
+        all_embeddings_1 = [embedding_matrix_1]
+        all_embeddings_2 = [embedding_matrix_2]
 
         for k in range(self.layer_num):
 
             # Graph Convolution operation without self connection
             embedding_matrix = torch.sparse.mm(A, embedding_matrix)
 
-            embedding_matrix_1 = torch.sparse.mm(sub_graph1, all_embeddings_1)  # sub_1
-            embedding_matrix_2 = torch.sparse.mm(sub_graph2, all_embeddings_2)
+            embedding_matrix_1 = torch.sparse.mm(sub_graph1, embedding_matrix_1)  # sub_1
+            embedding_matrix_2 = torch.sparse.mm(sub_graph2, embedding_matrix_2)
 
-            # Message dropout
-            if drop_flag:
-                embedding_matrix = nn.Dropout(0.1)(embedding_matrix)
-                embedding_matrix_1 = nn.Dropout(0.1)(embedding_matrix_1)
-                embedding_matrix_2 = nn.Dropout(0.1)(embedding_matrix_2)
 
             # Normalization
             norm_embeddings = F.normalize(embedding_matrix, p=2, dim=1)  # normalize each row
