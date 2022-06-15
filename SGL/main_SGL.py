@@ -27,7 +27,7 @@ if __name__ == '__main__':
     norm_adj, norm_adj_plus_I = data.creat_adj_mat()
     sub_graph1 = data.create_aug_adj_matrix(aug_type, ssl_rate)
     sub_graph2 = data.create_aug_adj_matrix(aug_type, ssl_rate)
-    print(sub_graph1, sub_graph2)
+
 
 
     print('Augmentation Type:', aug_type)
