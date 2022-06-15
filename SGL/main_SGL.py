@@ -4,9 +4,8 @@ end on 2022/xx/xx
 @author zelo2
 '''
 
-import model
-from snack import data_load
-from snack import parameter_setting
+import SGL_model
+from snack import parameter_setting, data_SGL
 import torch
 import numpy as np
 
@@ -20,14 +19,15 @@ if __name__ == '__main__':
     ssl_rate = eval(parser_sgl.ssl_rate[1])
 
     path = ['../Data/amazon-book', '../Data/gowalla']
-    path = path[1]
+    path = path[0]
     batch_size = parser_sgl.batch_size
-    data = data_load.Data(path, batch_size)
+    data = data_SGL.Data(path, batch_size)
 
     # Norm Adj Matrix
     norm_adj, norm_adj_plus_I = data.creat_adj_mat()
     sub_graph1 = data.create_aug_adj_matrix(aug_type, ssl_rate)
     sub_graph2 = data.create_aug_adj_matrix(aug_type, ssl_rate)
+    print(sub_graph1, sub_graph2)
 
 
     print('Augmentation Type:', aug_type)
@@ -36,7 +36,7 @@ if __name__ == '__main__':
     print("Interactions:", data.n_train + data.n_test)
     print("Density:", (data.n_train + data.n_test) / (data.n_user * data.n_item))
 
-    net = model.LightGCN_SSL(data.n_user, data.n_item, norm_adj, device, parser_sgl)
+    net = SGL_model.LightGCN_SSL(data.n_user, data.n_item, norm_adj, device, parser_sgl)
     net = net.to(device)
     print(net.device)
 
@@ -44,7 +44,7 @@ if __name__ == '__main__':
     optimizer = torch.optim.Adam(net.parameters(), lr=parser_sgl.lr)
     loss_loger, recall_loger, ndcg_loger = [], [], []
 
-    for epoch in range(parser_sgl.epoch):  # parser_ngcf.epoch
+    for epoch in range(parser_sgl.epoch):
         print("Train")
         loss = 0.
         n_batch = data.n_train // batch_size + 1

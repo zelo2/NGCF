@@ -1,50 +1,48 @@
 '''
-started on 2022/06/13
+started on 2022/06/08
 end on 2022/xx/xx
 @author zelo2
 '''
 
-import model
-from snack import data_load
-from snack import parameter_setting
+import NGCF_model
+from snack import parameter_setting, data_NGCF
 import torch
 import numpy as np
-
 
 if __name__ == '__main__':
     device = torch.device(('cuda:0') if torch.cuda.is_available() else 'cpu')
     print("Device:", device)
 
-    parser_lightgcn = parameter_setting.LightGCN_parse()
+    parser_ngcf = parameter_setting.NGCF_parse()
 
     path = ['../Data/amazon-book', '../Data/gowalla']
     path = path[1]
-    batch_size = parser_lightgcn.batch_size
-    data = data_load.Data(path, batch_size)
+    batch_size = parser_ngcf.batch_size
+    data = data_NGCF.Data(path, batch_size)
     norm_adj, norm_adj_plus_I = data.creat_adj_mat()
     print("User Number:", data.n_user)
     print("Item Number:", data.n_item)
     print("Interactions:", data.n_train + data.n_test)
     print("Density:", (data.n_train + data.n_test) / (data.n_user * data.n_item))
 
-    net = model.LightGCN(data.n_user, data.n_item, norm_adj, device, parser_lightgcn)
+    net = NGCF_model.NGCF(data.n_user, data.n_item, norm_adj_plus_I, norm_adj, device, parser_ngcf)
     net = net.to(device)
     print(net.device)
 
     '''Train'''
-    optimizer = torch.optim.Adam(net.parameters(), lr=parser_lightgcn.lr)
+    optimizer = torch.optim.Adam(net.parameters(), lr=parser_ngcf.lr)
     loss_loger, recall_loger, ndcg_loger = [], [], []
 
-    for epoch in range(parser_lightgcn.epoch):  # parser_ngcf.epoch
+    for epoch in range(parser_ngcf.epoch):  # parser_ngcf.epoch
         print("Train")
         loss = 0.
         n_batch = data.n_train // batch_size + 1
         print("n_batch", n_batch)
         for batch_iteration in range(n_batch):
             users, pos_items, neg_items = data.sample()  # [batch_size] * 3
-            users = torch.LongTensor(users).to(device)
-            pos_items = torch.LongTensor(pos_items).to(device)
-            neg_items = torch.LongTensor(neg_items).to(device)
+            # users = torch.LongTensor(users).to(device)
+            # pos_items = torch.LongTensor(pos_items).to(device)
+            # neg_items = torch.LongTensor(neg_items).to(device)
 
             user_embeddings, pos_item_embeddings, neg_item_embeddings = net(users, pos_items, neg_items, drop_flag=True)
             batch_loss = net.bpr_loss(user_embeddings, pos_item_embeddings, neg_item_embeddings)
@@ -63,7 +61,7 @@ if __name__ == '__main__':
         print("epoch:%d BPR loss:%f" % (epoch, loss))
 
         '''Test/Validation'''
-        if epoch > 4 and (epoch + 1) % 5 == 0:
+        if epoch > 19 and (epoch + 1) % 20 == 0:
         # if epoch > 5:
             with torch.no_grad():
                 print("Test")

@@ -6,9 +6,6 @@ end on 2022/xx/xx
 
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
-import numpy as np
-from snack import parameter_setting
 
 
 class LightGCN(nn.Module):

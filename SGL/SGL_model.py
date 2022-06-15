@@ -8,7 +8,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import numpy as np
-from snack import parameter_setting
+from snack import parameter_setting, data_SGL
 
 
 class LightGCN_SSL(nn.Module):
