@@ -30,8 +30,10 @@ class NGCF_dgl(nn.Module):
 
         # Initialize the graph
         self.g = dgl.to_bidirected(dgl.graph((self.R.row, self.R.col + self.n_user)))
-        self.g.ndata['emd'] = nn.Parameter(initializer(torch.empty(self.n_user + self.n_item, self.embed_size)), requires_grad=True)
+        self.g.ndata['emd'] = nn.Parameter(initializer(torch.empty(self.n_user + self.n_item, self.embed_size)),
+                                           requires_grad=True)
         self.g.ndata['in_d'] = self.g.in_degrees().reshape(-1, 1).repeat(1, self.embed_size)  # [node, embed]
+        self.g = self.g.to(self.device)
 
     def init_weight(self):
         '''Embedding with xavier initialization'''
@@ -66,9 +68,10 @@ class NGCF_dgl(nn.Module):
                 w2_linear = self.weight_dict['W2_layer%d' % current_layer]
                 w2_bias = self.weight_dict['b2_layer%d' % current_layer]
 
-                def ngcf_msg_func(edges):
+                def ngcf_msg_func(edges):  # too complex?
                     self_information = torch.mm(edges.dst['emd'], w1_linear) + w1_bias
-                    interaction_information = torch.mm(torch.mul(edges.src['emd'], edges.dst['emd']), w2_linear) + w2_bias
+                    interaction_information = torch.mm(torch.mul(edges.src['emd'], edges.dst['emd']),
+                                                       w2_linear) + w2_bias
                     final_msg = (self_information + interaction_information) / (
                             torch.sqrt(edges.src['in_d']) * torch.sqrt(edges.dst['in_d']))  # normalization
                     return {'m': final_msg}
@@ -79,6 +82,8 @@ class NGCF_dgl(nn.Module):
                     torch.mm(self.g.ndata['emd'], w1_linear) + w1_bias + self.g.ndata['new_emd'])
                 # Normalization
                 final_embeddings = F.normalize(final_embeddings, p=2, dim=1)  # normalize each row
+
+                self.g.ndata['emd'] = final_embeddings
 
                 all_embeddings += [final_embeddings]
 
@@ -125,7 +130,7 @@ class NGCF_dgl(nn.Module):
 
 if __name__ == '__main__':
     device = torch.device(('cuda:0') if torch.cuda.is_available() else 'cpu')
-    print("Device:", device)
+    print("Available Device:", device)
 
     parser_ngcf = parameter_setting.NGCF_parse()
 
@@ -140,7 +145,7 @@ if __name__ == '__main__':
 
     net = NGCF_dgl(data.n_user, data.n_item, data.R, device, parser_ngcf)
     net = net.to(device)
-    print(net.device)
+    print("NGCF Net is on:", net.device)
 
     '''Train'''
     optimizer = torch.optim.Adam(net.parameters(), lr=parser_ngcf.lr)
