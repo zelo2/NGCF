@@ -75,12 +75,12 @@ class NGCF_dgl(nn.Module):
 
                 self.g.update_all(ngcf_msg_func, dgl.function.sum('m', 'new_emd'))
 
-                self.g.ndata['emd'] = nn.LeakyReLU(negative_slope=0.2)(
+                final_embeddings = nn.LeakyReLU(negative_slope=0.2)(
                     torch.mm(self.g.ndata['emd'], w1_linear) + w1_bias + self.g.ndata['new_emd'])
                 # Normalization
-                self.g.ndata['emd'] = F.normalize(self.g.ndata['emd'], p=2, dim=1)  # normalize each row
+                final_embeddings = F.normalize(final_embeddings, p=2, dim=1)  # normalize each row
 
-                all_embeddings += [self.g.ndata['emd']]
+                all_embeddings += [final_embeddings]
 
             all_embeddings = torch.cat(all_embeddings, 1)
             user_embeddings = all_embeddings[:self.n_user, :]
