@@ -45,8 +45,8 @@ class NGCF_layer(nn.Module):
         g.update_all(ngcf_msg_func1, dgl.function.sum('m_1', 'result_1'))
         g.update_all(ngcf_msg_func2, dgl.function.sum('m_2', 'result_2'))
 
-        result = self.linear_layer_4_gcn(g.ndata['result_1']) + self.linear_layer_4_infor_enhance(g.ndata['result_2'])
-        result = result + self.linear_layer_4_gcn(feature)
+        result = self.linear_layer_4_gcn(g.ndata['result_1']) + self.linear_layer_4_infor_enhance(
+            g.ndata['result_2']) + self.linear_layer_4_gcn(feature)
         result = self.leakey_relu(result)
         result = F.normalize(result, p=2, dim=1)
 
